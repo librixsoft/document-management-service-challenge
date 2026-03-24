@@ -48,6 +48,12 @@ docker-compose down
 
 ---
 
+## Nota sobre OpenAPI vs REQUIREMENTS
+
+El código actual prioriza cumplir la mayoría de los requisitos funcionales (upload, search, download, MinIO + DB) y está alineado con el comportamiento real del controller. Sin embargo, el archivo `docs/document-management-open-api.yml` no documenta por completo ese comportamiento (por ejemplo, **upload multipart/form-data** y el **schema de respuesta** del upload). Se dejó así para no romper el contrato existente, pero el servicio sí implementa la funcionalidad principal descrita en `REQUIREMENTS.md`.
+
+---
+
 ## Variables de entorno
 
 Crea un `.env` en la raíz para sobrescribir los defaults:
@@ -66,9 +72,23 @@ MINIO_BUCKET=document-bucket
 ## Comandos útiles
 
 ```bash
-./mvnw test                        # Ejecutar tests
-./mvnw spotless:apply              # Formatear código
-./mvnw verify jacoco:report        # Reporte de cobertura
+# Ejecutar tests dentro de Docker (Java 17)
+docker run --rm -v "$PWD":/workspace -w /workspace maven:3.9.6-eclipse-temurin-17 mvn test
+
+# Reporte de cobertura (Jacoco) dentro de Docker
+
+docker run --rm -v "$PWD":/workspace -w /workspace maven:3.9.6-eclipse-temurin-17 mvn verify jacoco:report
+
+./mvnw spotless:apply              # Modifica tus archivos automáticamente para corregir el formato.
+./mvnw spotless:check              # Valida el formato. Si encuentra errores, falla el build y te dice qué archivos están mal.
+```
+
+## Probar postman
+
+npm i -g newman
+
+```bash
+newman run postman/document-management.postman_collection.json
 ```
 
 ---

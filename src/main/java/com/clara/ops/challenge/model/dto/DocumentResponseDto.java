@@ -9,8 +9,9 @@ import lombok.Data;
 public class DocumentResponseDto {
   private UUID id;
   private String user;
-  private String documentName;
+  private String name;
   private List<String> tags;
-  private Long fileSize;
+  private Integer size;
+  private String type;
   private LocalDateTime createdAt;
 }

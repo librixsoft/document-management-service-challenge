@@ -22,7 +22,8 @@ public class DocumentService {
   private final DocumentRepository documentRepository;
   private final StorageService storageService;
 
-  @Transactional
+  private static final long MAX_FILE_SIZE_BYTES = 500L * 1024 * 1024;
+
   public DocumentResponseDto uploadDocument(
       String user,
       String documentName,
@@ -30,6 +31,8 @@ public class DocumentService {
       InputStream inputStream,
       long size,
       String contentType) {
+
+    validateUpload(documentName, size, contentType);
 
     UUID docId = UUID.randomUUID();
     String minioPath = user + "/" + documentName;
@@ -76,13 +79,29 @@ public class DocumentService {
     return storageService.getPresignedUrl(entity.getMinioPath());
   }
 
+  private void validateUpload(String documentName, long size, String contentType) {
+    if (documentName == null || documentName.isBlank()) {
+      throw new IllegalArgumentException("Document name is required");
+    }
+    if (size <= 0) {
+      throw new IllegalArgumentException("File size must be greater than 0");
+    }
+    if (size > MAX_FILE_SIZE_BYTES) {
+      throw new IllegalArgumentException("File size exceeds 500MB limit");
+    }
+    if (contentType == null || !contentType.equalsIgnoreCase("application/pdf")) {
+      throw new IllegalArgumentException("Only PDF files are allowed");
+    }
+  }
+
   private DocumentResponseDto mapToDto(DocumentEntity entity) {
     DocumentResponseDto dto = new DocumentResponseDto();
     dto.setId(entity.getId());
     dto.setUser(entity.getUser());
-    dto.setDocumentName(entity.getDocumentName());
+    dto.setName(entity.getDocumentName());
     dto.setTags(entity.getTags());
-    dto.setFileSize(entity.getFileSize());
+    dto.setSize(Math.toIntExact(entity.getFileSize() == null ? 0L : entity.getFileSize()));
+    dto.setType(entity.getFileType());
     dto.setCreatedAt(entity.getCreatedAt());
     return dto;
   }

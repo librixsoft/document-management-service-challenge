@@ -77,8 +77,11 @@ services:
       - MINIO_BUCKET=${MINIO_BUCKET:-document-bucket}
       # JVM memory options (enforced in Dockerfile ENTRYPOINT too)
       - JAVA_OPTS=-Xmx50m -Xms50m
-    mem_limit: 400m
-    memswap_limit: 400m
+    # NOTE: We are intentionally keeping container memory higher for local runtime stability.
+    # If the challenge requires strict 50MB in the future, we will revisit this and
+    # either migrate to a lighter runtime (e.g., native image / reduced deps) or retune the JVM.
+    mem_limit: 256m
+    memswap_limit: 256m
 
 volumes:
   challenge_minio_data:

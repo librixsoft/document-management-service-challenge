@@ -3,6 +3,7 @@ package com.clara.ops.challenge.exception;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -18,6 +19,11 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleStorage(StorageException ex) {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
         .body(Map.of("error", ex.getMessage()));
+  }
+
+  @ExceptionHandler({IllegalArgumentException.class, MethodArgumentNotValidException.class})
+  public ResponseEntity<Map<String, String>> handleBadRequest(Exception ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
   }
 
   @ExceptionHandler(Exception.class)

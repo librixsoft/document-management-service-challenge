@@ -1,0 +1,202 @@
+{
+  "info": {
+    "name": "Document Management Service",
+    "description": "Aligned with REQUIREMENTS.md — object keys in bucket document-bucket: user1/doc1.pdf, user1/doc2.pdf, user2/doc3.pdf",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "REQUIREMENTS — document-bucket/{user}/{file}.pdf",
+      "item": [
+        {
+          "name": "Upload user1/doc1.pdf (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "user", "value": "user1", "type": "text"},
+                {"key": "name", "value": "doc1.pdf", "type": "text"},
+                {"key": "tags", "value": "tag1", "type": "text"},
+                {"key": "file", "type": "file", "src": "postman/doc1.pdf"}
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/document-management/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["document-management", "upload"]
+            },
+            "description": "MinIO object key: user1/doc1.pdf (bucket = MINIO_BUCKET, default document-bucket)"
+          }
+        },
+        {
+          "name": "Upload user1/doc2.pdf (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "user", "value": "user1", "type": "text"},
+                {"key": "name", "value": "doc2.pdf", "type": "text"},
+                {"key": "tags", "value": "tag2", "type": "text"},
+                {"key": "file", "type": "file", "src": "postman/doc2.pdf"}
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/document-management/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["document-management", "upload"]
+            },
+            "description": "MinIO object key: user1/doc2.pdf"
+          }
+        },
+        {
+          "name": "Upload user2/doc3.pdf (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "user", "value": "user2", "type": "text"},
+                {"key": "name", "value": "doc3.pdf", "type": "text"},
+                {"key": "tags", "value": "tag3", "type": "text"},
+                {"key": "file", "type": "file", "src": "postman/doc3.pdf"}
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/document-management/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["document-management", "upload"]
+            },
+            "description": "MinIO object key: user2/doc3.pdf"
+          }
+        },
+        {
+          "name": "Upload user1/doc1.pdf (JSON — sets {{documentId}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) {",
+                  "  pm.collectionVariables.set('documentId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n                           \"user\": \"user1\",\n                           \"name\": \"doc1.pdf\",\n                           \"tags\": [\"tag1\"],\n                           \"contentBase64\": \"JVBERi0xLjQKJS4uLg==\",\n                           \"contentType\": \"application/pdf\"\n                         }"
+            },
+            "url": {
+              "raw": "http://localhost:8080/document-management/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["document-management", "upload"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search user1 (after doc1 + doc2 uploads)",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n                           \"user\": \"user1\"\n                         }"
+        },
+        "url": {
+          "raw": "http://localhost:8080/document-management/search?page=0&size=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["document-management", "search"],
+          "query": [
+            {"key": "page", "value": "0"},
+            {"key": "size", "value": "20"}
+          ]
+        },
+        "description": "Expect documents named doc1.pdf and doc2.pdf under user1"
+      }
+    },
+    {
+      "name": "Search user1/doc1 by name fragment",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n                           \"user\": \"user1\",\n                           \"name\": \"doc1\",\n                           \"tags\": [\"tag1\"]\n                         }"
+        },
+        "url": {
+          "raw": "http://localhost:8080/document-management/search?page=0&size=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["document-management", "search"],
+          "query": [
+            {"key": "page", "value": "0"},
+            {"key": "size", "value": "20"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "Search user2/doc3",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n                           \"user\": \"user2\",\n                           \"name\": \"doc3\",\n                           \"tags\": [\"tag3\"]\n                         }"
+        },
+        "url": {
+          "raw": "http://localhost:8080/document-management/search?page=0&size=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["document-management", "search"],
+          "query": [
+            {"key": "page", "value": "0"},
+            {"key": "size", "value": "20"}
+          ]
+        },
+        "description": "Matches object key user2/doc3.pdf in MinIO"
+      }
+    },
+    {
+      "name": "Download Document URL ({{documentId}})",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/document-management/download/{{documentId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["document-management", "download", "{{documentId}}"]
+        },
+        "description": "Run \"Upload user1/doc1.pdf (JSON)\" first to set documentId"
+      }
+    }
+  ],
+  "variable": [{"key": "documentId", "value": ""}]
+}
