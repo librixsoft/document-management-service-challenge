@@ -1,0 +1,89 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgresql:
+    container_name: postgresql_container
+    image: postgres:17-alpine
+    restart: "no"
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    volumes:
+      - ./docker/init-scripts:/docker-entrypoint-initdb.d
+    tmpfs:
+      - /var/lib/postgresql/data:mode=0700,uid=999,gid=999
+    environment:
+      - POSTGRES_USER=${DB_USERNAME:-challenge_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-challenge_pass}
+      - POSTGRES_DB=${DB_NAME:-challenge}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-challenge_user} -d ${DB_NAME:-challenge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO ───────────────────────────────────────────────────────────────────
+  minio:
+    container_name: minio_container
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console
+    networks:
+      - app_network
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server --console-address ":9001" /data
+    volumes:
+      - challenge_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Document Management Service ─────────────────────────────────────────────
+  document-management-service:
+    container_name: document_management_service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Server
+      - SERVER_PORT=8080
+      # Database
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-challenge}
+      - DB_USERNAME=${DB_USERNAME:-challenge_user}
+      - DB_PASSWORD=${DB_PASSWORD:-challenge_pass}
+      # MinIO
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-document-bucket}
+      # JVM memory options (enforced in Dockerfile ENTRYPOINT too)
+      - JAVA_OPTS=-Xmx50m -Xms50m
+    mem_limit: 400m
+    memswap_limit: 400m
+
+volumes:
+  challenge_minio_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
